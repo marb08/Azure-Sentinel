@@ -9,6 +9,7 @@ import hmac
 import requests
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 import azure.functions as func
 import logging
 import os
@@ -17,8 +18,11 @@ import re
 
 customer_id = os.environ['WorkspaceID'] 
 shared_key = os.environ['WorkspaceKey']
-pickle_str = os.environ['GooglePickleString']
-pickle_string = base64.b64decode(pickle_str)
+
+#TO-DO change GooglePickleString naming, it can be misleading
+json_str=os.environ['GooglePickleString']
+json_string=json.loads(base64.b64decode(json_str).decode('ascii'))
+
 SCOPES = ['https://www.googleapis.com/auth/admin.reports.audit.readonly']
 activities = ["login", "calendar", "drive", "admin", "mobile", "token", "user_accounts"]
 logAnalyticsUri = os.environ.get('logAnalyticsUri')
@@ -33,14 +37,14 @@ if(not match):
 
 def get_credentials():
     creds = None
-    if pickle_string:
-        try:
-            creds = pickle.loads(pickle_string)
-        except Exception as pickle_read_exception:
-            logging.error('Error while loading pickle string: {}'.format(pickle_read_exception))
-    else:
-        logging.error('Error - pickle_string is empty. Exit')
-        exit(1)
+    creds = Credentials.from_authorized_user_info(json_string, SCOPES)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
     return creds
 
 def generate_date():
