@@ -1,5 +1,4 @@
 from __future__ import print_function
-import pickle
 from googleapiclient.discovery import build
 import datetime
 import json
@@ -18,7 +17,6 @@ import re
 
 customer_id = os.environ['WorkspaceID'] 
 shared_key = os.environ['WorkspaceKey']
-
 #TO-DO change GooglePickleString naming, it can be misleading
 json_str=os.environ['GooglePickleString']
 json_string=json.loads(base64.b64decode(json_str).decode('ascii'))
